@@ -1,0 +1,15 @@
+import { useMemo, useState } from "react";
+import type { Mode } from "../lib/api";
+import { localLocationMatches } from "../lib/indiaLocations";
+
+type Props = { mode: Mode; onModeChange: (m: Mode) => void; onSearch: (from: string, to: string, date: string, passengers?: number) => void };
+function LocationField({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder: string }) {
+  const suggestions = useMemo(() => localLocationMatches(value, 8), [value]);
+  return <label className="location-field"><span>{label}</span><input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} autoComplete="off" />{value && suggestions.length > 0 && <div className="location-suggestions">{suggestions.map(x => <button type="button" key={x} onClick={() => onChange(x)}>⌖ {x}</button>)}</div>}</label>;
+}
+export default function SearchBox({ mode, onModeChange, onSearch }: Props) {
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const [from, setFrom] = useState("Bengaluru"); const [to, setTo] = useState("Hyderabad"); const [date, setDate] = useState(tomorrow); const [passengers, setPassengers] = useState(1); const [error, setError] = useState("");
+  const submit = () => { if (!from.trim() || !to.trim()) return setError("Enter both origin and destination."); if (from.trim().toLowerCase() === to.trim().toLowerCase()) return setError("Origin and destination must be different."); if (!date) return setError("Choose a travel date."); setError(""); onSearch(from.trim(), to.trim(), date, passengers); };
+  return <div className="search-shell"><div className="mode-tabs">{(["bus", "train", "flight", "hotel"] as Mode[]).map(m => <button type="button" key={m} className={mode === m ? "mode-tab active" : "mode-tab"} onClick={() => onModeChange(m)}>{m === "bus" ? "🚌" : m === "train" ? "🚆" : m === "flight" ? "✈" : "🏨"} {m[0].toUpperCase() + m.slice(1)}</button>)}</div><div className="search-grid"><LocationField label={mode === "hotel" ? "City" : "From"} value={from} onChange={setFrom} placeholder="City, town or station" />{mode !== "hotel" && <button type="button" className="swap" onClick={() => { const x = from; setFrom(to); setTo(x); }}>⇄</button>}<LocationField label={mode === "hotel" ? "Area" : "To"} value={to} onChange={setTo} placeholder="City, town or station" /><label><span>{mode === "hotel" ? "Check-in" : "Departure"}</span><input type="date" min={new Date().toISOString().slice(0, 10)} value={date} onChange={e => setDate(e.target.value)} /></label><label><span>Passengers</span><select value={passengers} onChange={e => setPassengers(Number(e.target.value))}>{Array.from({ length: 9 }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n} {n === 1 ? "Passenger" : "Passengers"}</option>)}</select></label><button type="button" className="primary search-btn" onClick={submit}>Search trips <b>→</b></button></div>{error && <div className="search-error">{error}</div>}<div className="search-hint">Predictive destination search · India-wide locations · Compare prices, timings and availability.</div></div>;
+}

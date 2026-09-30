@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: tripmate
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
